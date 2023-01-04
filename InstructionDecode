@@ -1,0 +1,39 @@
+// Instruction decode stage
+ 
+ `timescale 1ns / 1ps
+ 
+ module InstructionDecode #(); 
+	 input [31:0] IF_ID_IR; //output from fetch stage
+	 //ID_EX_IR = Instruction Register for Decode stage
+	 //ID_EX_NPC = Next PC which is forwarded from fetch stage
+	 //ID_EX_Imm = Store the lower sign extended lower 16 bits of instruction
+	 reg[31:0] ID_EX_IR, ID_EX_NPC, ID_EX_Imm;
+	 reg[4:0] ID_EX_RD_A, ID_EX_RD_B;  //ID_EX_RD_A = Read data 1, ID_EX_RD_B = Read data 2
+	 reg[3:0] ID_EX_Type; //Type of the ALU instruction
+	 
+	 assign ID_EX_NPC <= #2 IF_ID_NPC; //Foward PC from fetch stage
+	 assign ID_EX_RD_A <= #2 IF_ID_IR[19:15}; //Assign read data 1
+	 assign ID_EX_RD_B <= #2 IF_ID_IR[14:10]; //Assign read data 2
+	 //add the write register code here
+	 assign ID_EX_Imm <= #2 {{16{IF_ID_IR[15]}},{IF_ID_IR[15:0]}}; //Sign extend
+	 assign ID_EX_IR <= #2 IF_ID_IR; //Forward contents from fetch to decode latch. Not sure if this is required?
+
+	 always @(posedge clk)
+	 begin
+		//parameter is like a constant. These values do not change during runtime.
+		 parameter RR_ALU = 4'b0001, LOAD_ALU = 4'b0001, STORE_ALU = 4'b0010, BRANCH_ALU = 4'b0011, JUMP_ALU = 4'b0100, MOVE_ALU = 4'b0101, TLBW_ALU = 4'b0110, IRET_ALU = 4'b0111
+		 parameter ADD = 6'h0, SUB = 6'h1, MUL = 6'h2, LDB = 6'h10, LDW = 6'h11, STB = 6'h10, STW = 6'h13, MOV = 6'h14, BEQ = 6'h30, JUMP = 6'31, TLBWRITE = 6'h32, IRET = 6'h33;
+
+		 case(IF_ID_IR[31:25])
+			ADD, SUB, MUL : ID_EX_Type <= #2 RR_ALU;
+			LDB, LDW : ID_EX_Type <= #2 LOAD_ALU; 
+			STB, STW : ID_EX_Type <= #2 STORE_ALU;
+			BEQ : ID_EX_Type <= #2 BRANCH_ALU;
+			JUMP : ID_EX_Type <= #2 JUMP_ALU;
+			MOV : ID_RX_TYPE <= #2 MOVE_ALU;
+			TLBWRITE : ID_RX_TYPE <= #2 TLBW_ALU;
+			IRET : ID_RX_TYPE <= #2 IRET_ALU;
+			default: ID_EX_Type <= #2 4'b0; //default 	
+		endcase
+	end
+endmodule
