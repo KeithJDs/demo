@@ -1,0 +1,42 @@
+// Instruction decode stage
+ 
+ `timescale 1ns / 1ps
+ 
+ module ExecutionALU #(); 
+ 	input[31:0] ID_EX_IR, ID_EX_NPC,ID_EX_Imm, ID_EX_RD_A, ID_EX_RD_B;
+  	input [2:0] ID_EX_Type;
+   
+	reg[31:0] EX_MEM_IR, ID_EX_NPC, ID_EX_RDA, ID_EX_RDB, EX_MEM_ALUOut, EX_MEM_ALUAddOut;
+	reg Branch_Taken, EX_MEM_cond;
+	output reg [31:0] Branch_addr;
+	always @(posedge clk)
+   
+	   assign EX_MEM_ALUAddOut <= #2 ID_EX_NPC + (ID_EX_Imm << 2);
+	   assign Branch_Taken <= #2 1'b0;
+	   case (ID_EX_Type)
+		   RR_ALU : 
+			begin
+			    case(ID_EX_IR[31:26])
+			      ADD : EX_MEM_ALUOut <= #2 ID_EX_A + ID_EX_B;
+			      SUB : EX_MEM_ALUOut <= #2 ID_EX_A - ID_EX_B;
+			      MUL : EX_MEM_ALUOut <= #2 ID_EX_A * ID_EX_B;
+			      default : EX_MEM_ALUOut <= #2 32'hxxxxxxxx;
+			   endcase
+			end
+
+		   LOAD, STORE : 
+			begin
+				EX_MEM_ALUOut <= #2 ID_EX_RD_A + ID_EX_Imm;
+				EX_MEM_RD_B <= #2 ID_EX_B;
+			end
+
+		   BRANCH : 
+			begin
+				Branch_addr <= #2 ID_EX_NPC + (ID_EX_Imm << 2);
+				EX_MEM_cond <= #2 (EX_MEM_ALUOut == 0);
+
+			end
+			\\Add JUMP case
+	   endcase
+
+endmodule
